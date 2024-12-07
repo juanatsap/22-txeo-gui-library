@@ -21,6 +21,20 @@ var MonthsEnglishMap = map[string]string{
 	"Noviembre":  "November",
 	"Diciembre":  "December",
 }
+var MonthsSpanishMap = map[string]string{
+	"January":   "Enero",
+	"February":  "Febrero",
+	"March":     "Marzo",
+	"April":     "Abril",
+	"May":       "Mayo",
+	"June":      "Junio",
+	"July":      "Julio",
+	"August":    "Agosto",
+	"September": "Septiembre",
+	"October":   "Octubre",
+	"November":  "Noviembre",
+	"December":  "Diciembre",
+}
 var Years = []string{"2024", "2023", "2022", "2021"}
 var treeData = map[string][]string{
 	"":     Years,
