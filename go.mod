@@ -6,6 +6,8 @@ require (
 	fyne.io/fyne/v2 v2.5.3-0.20241016103742-4875e351f57a
 	fyne.io/x/fyne v0.0.0-20240803204126-8b5b5bfe65ef
 	github.com/fyne-io/terminal v0.0.0-20241115221031-9755d1f0986a
+	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
+	github.com/sirupsen/logrus v1.9.3
 )
 
 require (
