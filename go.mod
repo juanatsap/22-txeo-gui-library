@@ -1,6 +1,6 @@
 module txeo-gui-library
 
-go 1.23.2
+go 1.24.0
 
 require (
 	fyne.io/fyne/v2 v2.5.3-0.20241016103742-4875e351f57a
