@@ -35,13 +35,14 @@ var MonthsSpanishMap = map[string]string{
 	"November":  "Noviembre",
 	"December":  "Diciembre",
 }
-var Years = []string{"2024", "2023", "2022", "2021"}
+var Years = []string{"2025", "2024", "2023", "2022", "2021"}
 var treeData = map[string][]string{
 	"":     Years,
 	"2021": Months,
 	"2022": Months,
 	"2023": Months,
 	"2024": Months,
+	"2025": Months,
 }
 
 func MakeTree() *widget.Tree {
