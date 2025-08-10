@@ -39,8 +39,26 @@ func (b Block) PrintInfo() {
 func (b Block) GetBackgroundGlobalStyle() *widget.CustomTextGridStyle {
 	greenStyle := &widget.CustomTextGridStyle{BGColor: &color.NRGBA{R: 64, G: 192, B: 64, A: 128}}
 	redStyle := &widget.CustomTextGridStyle{BGColor: &color.NRGBA{R: 192, G: 64, B: 64, A: 128}}
+	savingsStyle := &widget.CustomTextGridStyle{BGColor: &color.NRGBA{R: 46, G: 125, B: 50, A: 90}}     // More distinct dark green for savings
+	withdrawalStyle := &widget.CustomTextGridStyle{BGColor: &color.NRGBA{R: 183, G: 28, B: 28, A: 128}} // Dark red for withdrawals
+	incomeStyle := &widget.CustomTextGridStyle{BGColor: &color.NRGBA{R: 76, G: 175, B: 80, A: 128}}     // Light green for income
 
 	amountStyle := styles.GetStyleForAmount(b.Amount)
+
+	// Check if this is a savings category (including HUCHA transfers)
+	if b.Category.Subcategory == "savings" || b.Category.Subcategory == "HUCHA_SAVE" {
+		return savingsStyle
+	}
+
+	// Check if this is a withdrawal category (retiro de hucha or HUCHA_TAKE)
+	if b.Category.Subcategory == "withdrawal" || b.Category.Subcategory == "HUCHA_TAKE" {
+		return withdrawalStyle
+	}
+
+	// Check if this is an income category
+	if b.Category.Subcategory == "income" {
+		return incomeStyle
+	}
 
 	var returnedStyle *widget.CustomTextGridStyle
 	if b.Amount > 0 {
@@ -58,21 +76,79 @@ func (b Block) GetBackgroundGlobalStyle() *widget.CustomTextGridStyle {
 }
 func (b Block) GetDateStyle(blocks Blocks) *widget.CustomTextGridStyle {
 
-	// take the date of the block, and for all the blocks in that date, sum the amounts
-	oneDayAmount := 0.0
+	// Calculate net spending for the day (expenses minus income)
+	dayExpenses := 0.0
+	dayIncome := 0.0
+
 	for i := 0; i < len(blocks); i++ {
 		if blocks[i].Date == b.Date {
-			oneDayAmount += blocks[i].Amount
+			// Check if this is income, savings, or expense
+			subcategory := blocks[i].Category.Subcategory
+			switch subcategory {
+			case "income":
+				dayIncome += blocks[i].Amount
+			case "savings", "HUCHA_SAVE":
+				// Savings are treated as neutral or slightly positive
+				// Don't add to expenses
+			case "HUCHA_TAKE":
+				// Taking from savings is an expense
+				dayExpenses += blocks[i].Amount
+			default:
+				// Regular expenses
+				dayExpenses += blocks[i].Amount
+			}
 		}
 	}
-	oneDateStyle := styles.GetStyleForAmount(oneDayAmount)
 
+	// Calculate net amount (negative means more income than expenses = good)
+	netAmount := dayExpenses - dayIncome
+
+	// If we have more income than expenses, use green colors
+	if dayIncome > dayExpenses {
+		return &widget.CustomTextGridStyle{
+			FGColor: &color.NRGBA{R: 255, G: 255, B: 255, A: 255}, // White text
+			BGColor: &color.NRGBA{R: 0, G: 150, B: 0, A: 255},     // Green background for net positive days
+		}
+	}
+
+	// Otherwise use the gradient based on net spending
+	oneDateStyle := styles.GetStyleForAmount(netAmount)
 	return oneDateStyle
 }
 func (b Block) GetAmountStyle() *widget.CustomTextGridStyle {
+	// For income transactions, use green color
+	if b.Category.Subcategory == "income" {
+		return &widget.CustomTextGridStyle{
+			FGColor: &color.NRGBA{R: 0, G: 150, B: 0, A: 255}, // Dark green for income amounts
+		}
+	}
+
+	// For savings/HUCHA transactions, use a different green
+	if b.Category.Subcategory == "savings" || b.Category.Subcategory == "HUCHA_SAVE" {
+		return &widget.CustomTextGridStyle{
+			FGColor: &color.NRGBA{R: 46, G: 125, B: 50, A: 255}, // Forest green for savings
+		}
+	}
+
+	// For withdrawals, use the standard gradient (will be red for high amounts)
 	return styles.GetStyleForAmount(b.Amount)
 }
 func (b Block) GetBalanceStyle() *widget.CustomTextGridStyle {
+	// For income transactions, always use green for balance
+	if b.Category.Subcategory == "income" {
+		return &widget.CustomTextGridStyle{
+			FGColor: &color.NRGBA{R: 0, G: 150, B: 0, A: 255}, // Dark green for income balance
+		}
+	}
+
+	// For savings/HUCHA transactions, use green for balance
+	if b.Category.Subcategory == "savings" || b.Category.Subcategory == "HUCHA_SAVE" {
+		return &widget.CustomTextGridStyle{
+			FGColor: &color.NRGBA{R: 46, G: 125, B: 50, A: 255}, // Forest green for savings balance
+		}
+	}
+
+	// For regular transactions, use the standard gradient based on balance
 	return styles.GetStyleForBalance(b.GetBalanceAsFloat())
 }
 func (b Block) GetConceptStyle() *widget.CustomTextGridStyle {
@@ -108,6 +184,14 @@ func (b *Block) AssignCategoryForBlock(categories Categories) {
 
 	// Get Unknown Category
 	var category Category
+
+	// Special case: TRANSFER.HUCHA DIGI should never auto-categorize
+	if b.Concept.Name == "TRANSFER.HUCHA DIGI" {
+		// Leave category empty to force manual categorization
+		b.Category = category
+		return
+	}
+
 	category = category.TryToAssignCategory(*b, categories)
 
 	// Try to assign a category to the block
